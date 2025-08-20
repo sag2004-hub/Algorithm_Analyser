@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enhanced Algorithm Visualizer</title>
+  <style>
+    :root {
+      --bg: #0f1117; --panel: #161a23; --ink: #eaeefb; --muted: #9aa4b2; 
+      --accent: #6ee7b7; --accent2: #60a5fa; --warn: #f59e0b; --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial; 
+      color: var(--ink); 
+      background: linear-gradient(180deg, #0b0d12, #0f1117 40%, #0b0d12);
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+    header {
+      position: sticky; 
+      top: 0; 
+      z-index: 30; 
+      background: rgba(15,17,23,.75); 
+      backdrop-filter: saturate(140%) blur(10px); 
+      border-bottom: 1px solid #202636;
+    }
+    .wrap {
+      max-width: 1400px; 
+      margin: 0 auto; 
+      padding: 16px;
+    }
+    h1 {
+      margin: 0 0 8px; 
+      font-weight: 800; 
+      letter-spacing: .2px; 
+      font-size: 22px;
+    }
+    .toolbar {
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 10px; 
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    select, button, input[type="number"], input[type="text"] {
+      background: var(--panel); 
+      color: var(--ink); 
+      border: 1px solid #263042; 
+      border-radius: 10px; 
+      padding: 10px 12px; 
+      font-size: 14px; 
+      outline: none;
+    }
+    button {
+      cursor: pointer; 
+      transition: .2s transform, .2s opacity;
+    }
+    button:hover {
+      transform: translateY(-1px);
+    }
+    button.primary {
+      background: linear-gradient(90deg, var(--accent2), #34d399); 
+      border: none; 
+      color: #071118; 
+      font-weight: 700;
+    }
+    button.danger {
+      background: linear-gradient(90deg, #ef4444, #f97316); 
+      border: none; 
+      color: white; 
+      font-weight: 700;
+    }
+    button.secondary {
+      background: var(--panel); 
+      border: 1px solid #263042; 
+      color: var(--ink);
+    }
+    .hint {
+      color: var(--muted); 
+      font-size: 12px;
+    }
+    main {
+      max-width: 1400px; 
+      margin: 24px auto; 
+      padding: 0 16px;
+    }
+    .panel {
+      background: var(--panel); 
+      border: 1px solid #263042; 
+      border-radius: 16px; 
+      padding: 20px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      margin-bottom: 20px;
+    }
+
+    /* Tabs */
+    .tab-container {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      background: #1a1f2e;
+      padding: 6px;
+      border-radius: 12px;
+    }
+    .tab {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .tab.active {
+      background: var(--accent2);
+      color: #071118;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Visualization areas */
+    #arrayViz, #searchViz {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      align-items: flex-end;
+      min-height: 300px;
+      padding: 20px;
+      border-radius: 14px;
+      background: #1a1f2e;
+    }
+
+    #graphViz {
+      min-height: 400px;
+      padding: 20px;
+      border-radius: 14px;
+      background: #1a1f2e;
+      position: relative;
+      overflow: auto;
+    }
+
+    /* Value boxes for arrays and search */
+    .value-box {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #34d399, #059669);
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 18px;
+      color: white;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      user-select: none;
+    }
+    .value-box.active {
+      background: linear-gradient(135deg, #60a5fa, #2563eb);
+      transform: scale(1.1);
+      box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+    }
+    .value-box.swap {
+      background: linear-gradient(135deg, #f472b6, #ec4899);
+      transform: scale(1.1);
+    }
+    .value-box.ok, .value-box.found {
+      background: linear-gradient(135deg, #a7f3d0, #10b981);
+    }
+    .value-box.compared {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    .value-box.pivot {
+      background: linear-gradient(135deg, #c084fc, #9333ea);
+    }
+    .value-box.visited {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+
+    /* Tree/Graph nodes */
+    .tree-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      min-height: 300px;
+      padding: 20px;
+    }
+
+    .tree-level {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 60px;
+      position: relative;
+    }
+
+    .tree-node {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #60a5fa, #3b82f6);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      user-select: none;
+    }
+
+    .tree-node:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .tree-node.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      transform: scale(1.2);
+    }
+
+    .tree-node.visited {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+
+    .tree-node.path {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    /* Tree edges */
+    .tree-edge {
+      position: absolute;
+      background: #9ca3af;
+      transform-origin: left center;
+      height: 2px;
+      z-index: 1;
+    }
+
+    /* Graph input controls */
+    .graph-input {
+      background: #1d2332;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+
+    .graph-input h4 {
+      margin-bottom: 12px;
+      color: var(--accent);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-group label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* Controls area */
+    .row {
+      display: flex; 
+      gap: 12px; 
+      align-items: center; 
+      flex-wrap: wrap;
+    }
+    .spacer {
+      flex: 1;
+    }
+    .pill {
+      padding: 6px 10px; 
+      background: #1d2332; 
+      border: 1px solid #2a3246; 
+      border-radius: 999px;
+    }
+    
+    /* Traversal panel */
+    .traversal-panel {
+      position: fixed; 
+      bottom: 0; 
+      left: 0; 
+      right: 0; 
+      background: var(--panel); 
+      border-top: 1px solid #202636; 
+      padding: 16px; 
+      z-index: 20;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+      max-height: 60vh;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+    }
+    .traversal-panel.collapsed {
+      max-height: 60px;
+    }
+    .traversal-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .traversal-panel-header h3 {
+      margin: 0; 
+      font-size: 16px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .collapse-icon {
+      transition: transform 0.3s ease;
+      font-size: 18px;
+      color: var(--muted);
+    }
+    .collapsed .collapse-icon {
+      transform: rotate(180deg);
+    }
+    .traversal-content {
+      flex: 1;
+      overflow-y: auto; 
+      font-family: monospace; 
+      font-size: 13px; 
+      line-height: 1.4;
+      padding: 12px;
+      background: #1a1f2e;
+      border-radius: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: #4a5568 #2d3748;
+      max-height: calc(60vh - 120px);
+    }
+    .traversal-content::-webkit-scrollbar {
+      width: 6px;
+    }
+    .traversal-content::-webkit-scrollbar-track {
+      background: #2d3748;
+      border-radius: 3px;
+    }
+    .traversal-content::-webkit-scrollbar-thumb {
+      background: #4a5568;
+      border-radius: 3px;
+    }
+    .traversal-content::-webkit-scrollbar-thumb:hover {
+      background: #60a5fa;
+    }
+    .traversal-step {
+      margin-bottom: 8px; 
+      padding: 10px 12px; 
+      border-radius: 8px; 
+      background: #1d2332;
+      border-left: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .traversal-step:hover {
+      background: #242a3a;
+    }
+    .traversal-step.active {
+      background: #2a3246; 
+      border-left: 4px solid var(--accent);
+      box-shadow: 0 2px 4px rgba(110, 231, 183, 0.1);
+    }
+    .traversal-actions {
+      display: flex; 
+      gap: 8px; 
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .step-counter {
+      color: var(--muted);
+      font-size: 12px;
+      background: #1d2332;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-left: auto;
+    }
+    
+    /* Code display */
+    .code-panel {
+      margin-top: 20px;
+    }
+    .code-panel pre {
+      background: #1a1f2e;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .code-line {
+      transition: background 0.2s;
+    }
+    .code-line.highlight {
+      background: rgba(96, 165, 250, 0.2);
+      color: var(--accent2);
+    }
+    
+    /* Stats panel */
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      background: #1d2332;
+      padding: 12px;
+      border-radius: 8px;
+      min-width: 120px;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--accent);
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Instructions */
+    .instructions {
+      background: #1d2332;
+      padding: 16px;
+      border-radius: 10px;
+      margin-top: 16px;
+      font-size: 14px;
+    }
+    .instructions h4 {
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+    .instructions ul {
+      padding-left: 20px;
+    }
+    .instructions li {
+      margin-bottom: 6px;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .wrap, main {
+        padding: 12px;
+      }
+      
+      .toolbar {
+        gap: 8px;
+        justify-content: flex-start;
+      }
+      
+      .pill {
+        padding: 8px;
+        font-size: 13px;
+      }
+      
+      .pill label {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        font-size: 12px;
+      }
+      
+      .pill input {
+        width: 100% !important;
+        min-width: 60px;
+      }
+      
+      h1 {
+        font-size: 18px;
+      }
+      
+      select, button, input[type="number"], input[type="text"] {
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+      
+      #arrayViz, #searchViz {
+        gap: 8px;
+        padding: 16px;
+        min-height: 200px;
+      }
+      
+      .value-box {
+        width: 45px;
+        height: 45px;
+        font-size: 14px;
+      }
+      
+      #graphViz {
+        min-height: 300px;
+        padding: 16px;
+      }
+      
+      .tree-node {
+        width: 40px;
+        height: 40px;
+        font-size: 14px;
+      }
+      
+      .tree-level {
+        gap: 30px;
+      }
+      
+      .stats {
+        justify-content: center;
+      }
+      
+      .stat-box {
+        min-width: 100px;
+        padding: 10px;
+      }
+      
+      .stat-value {
+        font-size: 20px;
+      }
+      
+      .traversal-panel {
+        max-height: 70vh;
+        padding: 12px;
+        border-radius: 12px 12px 0 0;
+      }
+      
+      .traversal-content {
+        font-size: 12px;
+        max-height: calc(70vh - 100px);
+      }
+      
+      .traversal-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      
+      .graph-input {
+        padding: 12px;
+      }
+      
+      .input-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .input-group {
+        margin-bottom: 8px;
+      }
+      
+      .input-group input, .input-group select, .input-group button {
+        width: 100%;
+      }
+      
+      .tab-container {
+        flex-direction: column;
+        gap: 0;
+      }
+      
+      .tab {
+        padding: 10px 16px;
+        border-radius: 0;
+        border-bottom: 1px solid #2a3246;
+      }
+      
+      .tab:first-child {
+        border-radius: 8px 8px 0 0;
+      }
+      
+      .tab:last-child {
+        border-radius: 0 0 8px 8px;
+        border-bottom: none;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .toolbar > * {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .row {
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .spacer {
+        display: none;
+      }
+      
+      #arrayViz, #searchViz {
+        gap: 6px;
+        padding: 12px;
+      }
+      
+      .value-box {
+        width: 35px;
+        height: 35px;
+        font-size: 12px;
+      }
+      
+      .tree-level {
+        gap: 20px;
+      }
+      
+      .tree-node {
+        width: 35px;
+        height: 35px;
+        font-size: 12px;
+      }
+      
+      .stats {
+        flex-direction: column;
+      }
+      
+      .stat-box {
+        min-width: auto;
+        text-align: center;
+      }
+      
+      .traversal-panel {
+        border-radius: 8px 8px 0 0;
+        padding: 10px;
+      }
+      
+      .traversal-content {
+        font-size: 11px;
+        padding: 8px;
+      }
+      
+      .traversal-step {
+        padding: 8px;
+      }
+      
+      .code-panel pre {
+        font-size: 11px;
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Enhanced Algorithm Visualizer</h1>
+      <div class="toolbar">
+        <select id="algo">
+          <optgroup label="Sorting">
+            <option value="sort:bubble">Bubble Sort</option>
+            <option value="sort:selection">Selection Sort</option>
+            <option value="sort:insertion">Insertion Sort</option>
+            <option value="sort:merge">Merge Sort</option>
+            <option value="sort:quick">Quick Sort</option>
+            <option value="sort:heap">Heap Sort</option>
+          </optgroup>
+          <optgroup label="Searching">
+            <option value="search:linear">Linear Search</option>
+            <option value="search:binary">Binary Search</option>
+            <option value="search:jump">Jump Search</option>
+            <option value="search:interpolation">Interpolation Search</option>
+          </optgroup>
+          <optgroup label="Tree/Graph">
+            <option value="tree:bfs">Tree BFS Traversal</option>
+            <option value="tree:dfs">Tree DFS Traversal</option>
+            <option value="tree:inorder">Tree Inorder</option>
+            <option value="tree:preorder">Tree Preorder</option>
+            <option value="tree:postorder">Tree Postorder</option>
+            <option value="graph:dijkstra">Dijkstra's Algorithm</option>
+            <option value="graph:bfs">Graph BFS</option>
+            <option value="graph:dfs">Graph DFS</option>
+          </optgroup>
+        </select>
+
+        <div class="pill">
+          <label>Speed: <input id="speed" type="range" min="1" max="200" value="60" style="width:80px"></label>
+        </div>
+        <div class="pill" id="sizeBox">
+          <label>Elements: <input id="count" type="number" min="5" max="20" value="10" style="width:60px"></label>
+        </div>
+        <div class="pill" id="targetBox">
+          <label>Target: <input id="target" type="number" placeholder="auto" style="width:80px"></label>
+        </div>
+        <div class="pill" id="customArrayBox">
+          <label>Values: <input id="customArray" type="text" placeholder="e.g., 5,3,8,1,9" style="width:140px"></label>
+          <button id="applyCustom" class="secondary">Apply</button>
+        </div>
+
+        <span class="spacer"></span>
+        <button class="primary" id="gen">Generate</button>
+        <button class="primary" id="run">Run</button>
+        <button class="danger" id="stop">Stop / Clear</button>
+      </div>
+      <div class="hint">Tip: Switch between different algorithm types using tabs. Customize values or generate random ones.</div>
+    </div>
+  </header>
+
+  <main>
+    <div id="stage" class="panel">
+      <div class="tab-container">
+        <button class="tab active" data-tab="sorting">Sorting Algorithms</button>
+        <button class="tab" data-tab="searching">Search Algorithms</button>
+        <button class="tab" data-tab="graphs">Tree & Graph Algorithms</button>
+      </div>
+
+      <!-- Sorting Tab -->
+      <div class="tab-content active" id="sorting-tab">
+        <div id="arrayViz"></div>
+        <div class="instructions">
+          <h4>Sorting Algorithms Instructions</h4>
+          <ul>
+            <li>Enter custom values or generate random array</li>
+            <li>Select a sorting algorithm from the dropdown</li>
+            <li>Click "Run" to see step-by-step visualization</li>
+            <li>Green boxes show final sorted positions</li>
+            <li>Blue/orange boxes show current comparisons</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Searching Tab -->
+      <div class="tab-content" id="searching-tab">
+        <div id="searchViz"></div>
+        <div class="instructions">
+          <h4>Search Algorithms Instructions</h4>
+          <ul>
+            <li>Enter array values and target value</li>
+            <li>For binary search, array should be sorted</li>
+            <li>Orange box shows current element being checked</li>
+            <li>Green box shows target when found</li>
+            <li>Purple boxes show already searched elements</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Tree/Graph Tab -->
+      <div class="tab-content" id="graphs-tab">
+        <div class="graph-input">
+          <h4>Tree/Graph Builder</h4>
+          <div class="input-row">
+            <div class="input-group">
+              <label>Node Value</label>
+              <input type="number" id="nodeValue" placeholder="e.g., 10">
+            </div>
+            <div class="input-group">
+              <label>Parent Node</label>
+              <select id="parentNode">
+                <option value="">Root Node</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Edge Weight (for graphs)</label>
+              <input type="number" id="edgeWeight" value="1" min="1">
+            </div>
+            <div class="input-group">
+              <button class="secondary" id="addNode">Add Node</button>
+              <button class="secondary" id="buildBST">Build Sample BST</button>
+              <button class="secondary" id="clearTree">Clear Tree</button>
+            </div>
+          </div>
+          <div class="input-row">
+            <div class="input-group">
+              <label>Quick Build Tree</label>
+              <input type="text" id="treeValues" placeholder="e.g., 50,30,70,20,40,60,80" style="min-width: 200px;">
+            </div>
+            <div class="input-group">
+              <button class="secondary" id="buildFromValues">Build Tree</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="graphViz">
+          <div class="tree-container" id="treeContainer">
+            <div class="tree-level">
+              <div class="tree-node" style="display: none;">Start</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="instructions">
+          <h4>Tree & Graph Instructions</h4>
+          <ul>
+            <li>Add nodes one by one or use "Quick Build Tree"</li>
+            <li>For BST: nodes automatically position based on value</li>
+            <li>Select traversal algorithm and click "Run"</li>
+            <li>Orange nodes show current position</li>
+            <li>Purple nodes show visited nodes</li>
+            <li>Green nodes show final path or completion</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-value" id="comparisons">0</div>
+          <div class="stat-label">Comparisons</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="swaps">0</div>
+          <div class="stat-label">Swaps</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="iterations">0</div>
+          <div class="stat-label">Iterations</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="stepCount">0</div>
+          <div class="stat-label">Steps</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel code-panel">
+      <h3>Algorithm Code</h3>
+      <pre id="codeDisplay">// Select an algorithm to see its code</pre>
+    </div>
+  </main>
+
+  <div id="traversalPanel" class="traversal-panel" style="display:none">
+    <div class="traversal-panel-header" id="traversalHeader">
+      <h3>
+        Algorithm Traversal Steps
+        <span class="step-counter" id="stepCounter">Step 0 of 0</span>
+      </h3>
+      <span class="collapse-icon">▼</span>
+    </div>
+    <div id="traversalContent" class="traversal-content"></div>
+    <div class="traversal-actions">
+      <button id="prevStep" class="secondary">Previous Step</button>
+      <button id="nextStep" class="secondary">Next Step</button>
+      <button id="autoPlay" class="secondary">Auto Play</button>
+      <button id="closeTraversal" class="secondary">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // ======= Global State =======
+    const arrayViz = document.getElementById('arrayViz');
+    const searchViz = document.getElementById('searchViz');
+    const graphViz = document.getElementById('graphViz');
+    const treeContainer = document.getElementById('treeContainer');
+    const algoSel = document.getElementById('algo');
+    const speedInp = document.getElementById('speed');
+    const countInp = document.getElementById('count');
+    const targetInp = document.getElementById('target');
+    const customArrayInp = document.getElementById('customArray');
+    const applyCustomBtn = document.getElementById('applyCustom');
+    const traversalPanel = document.getElementById('traversalPanel');
+    const traversalHeader = document.getElementById('traversalHeader');
+    const traversalContent = document.getElementById('traversalContent');
+    const prevStepBtn = document.getElementById('prevStep');
+    const nextStepBtn = document.getElementById('nextStep');
+    const autoPlayBtn = document.getElementById('autoPlay');
+    const closeTraversalBtn = document.getElementById('closeTraversal');
+    const stepCounter = document.getElementById('stepCounter');
+    const codeDisplay = document.getElementById('codeDisplay');
+    const comparisonsEl = document.getElementById('comparisons');
+    const swapsEl = document.getElementById('swaps');
+    const iterationsEl = document.getElementById('iterations');
+    const stepCountEl = document.getElementById('stepCount');
+    
+    // Tree/Graph specific elements
+    const nodeValueInp = document.getElementById('nodeValue');
+    const parentNodeSel = document.getElementById('parentNode');
+    const edgeWeightInp = document.getElementById('edgeWeight');
+    const addNodeBtn = document.getElementById('addNode');
+    const buildBSTBtn = document.getElementById('buildBST');
+    const clearTreeBtn = document.getElementById('clearTree');
+    const treeValuesInp = document.getElementById('treeValues');
+    const buildFromValuesBtn = document.getElementById('buildFromValues');
+
+    let abortFlag = false;
+    let traversalSteps = [];
+    let currentStep = 0;
+    let comparisons = 0;
+    let swaps = 0;
+    let iterations = 0;
+    let steps = 0;
+    let currentTab = 'sorting';
+    let autoPlayInterval = null;
+    let isPanelCollapsed = false;
+    
+    // Tree/Graph data structure
+    let treeNodes = [];
+    let treeEdges = [];
+    let treeRoot = null;
+
+    class TreeNode {
+      constructor(value, x = 0, y = 0, level = 0) {
+        this.value = value;
+        this.x = x;
+        this.y = y;
+        this.level = level;
+        this.children = [];
+        this.parent = null;
+        this.element = null;
+      }
+    }
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        
+        // Update tab buttons
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(tabName + '-tab').classList.add('active');
+        
+        currentTab = tabName;
+        updateControlVisibility();
+        updateCodeDisplay();
+      });
+    });
+
+    // Traversal panel collapse functionality
+    traversalHeader.addEventListener('click', () => {
+      isPanelCollapsed = !isPanelCollapsed;
+      traversalPanel.classList.toggle('collapsed', isPanelCollapsed);
+    });
+
+    // Algorithm code examples
+    const algorithmCode = {
+      'bubble': `function bubbleSort(arr) {
+  let n = arr.length;
+  for (let i = 0; i < n-1; i++) {
+    for (let j = 0; j < n-i-1; j++) {
+      if (arr[j] > arr[j+1]) {
+        // Swap arr[j] and arr[j+1]
+        let temp = arr[j];
+        arr[j] = arr[j+1];
+        arr[j+1] = temp;
+      }
+    }
+  }
+}`,
+      'selection': `function selectionSort(arr) {
+  let n = arr.length;
+  for (let i = 0; i < n-1; i++) {
+    let minIdx = i;
+    for (let j = i+1; j < n; j++) {
+      if (arr[j] < arr[minIdx]) {
+        minIdx = j;
+      }
+    }
+    let temp = arr[minIdx];
+    arr[minIdx] = arr[i];
+    arr[i] = temp;
+  }
+}`,
+      'insertion': `function insertionSort(arr) {
+  let n = arr.length;
+  for (let i = 1; i < n; i++) {
+    let key = arr[i];
+    let j = i - 1;
+    while (j >= 0 && arr[j] > key) {
+      arr[j+1] = arr[j];
+      j = j - 1;
+    }
+    arr[j+1] = key;
+  }
+}`,
+      'linear': `function linearSearch(arr, target) {
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] === target) {
+      return i; // Found at index i
+    }
+  }
+  return -1; // Not found
+}`,
+      'binary': `function binarySearch(arr, target) {
+  let left = 0;
+  let right = arr.length - 1;
+  while (left <= right) {
+    let mid = Math.floor((left + right) / 2);
+    if (arr[mid] === target) {
+      return mid;
+    } else if (arr[mid] < target) {
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+  return -1;
+}`,
+      'bfs': `function treeBFS(root) {
+  if (!root) return;
+  let queue = [root];
+  let result = [];
+  
+  while (queue.length > 0) {
+    let node = queue.shift();
+    result.push(node.value);
+    
+    for (let child of node.children) {
+      queue.push(child);
+    }
+  }
+  return result;
+}`,
+      'dfs': `function treeDFS(root) {
+  if (!root) return;
+  let result = [];
+  
+  function traverse(node) {
+    result.push(node.value);
+    for (let child of node.children) {
+      traverse(child);
+    }
+  }
+  
+  traverse(root);
+  return result;
+}`,
+      'inorder': `function inorderTraversal(root) {
+  if (!root) return;
+  let result = [];
+  
+  function traverse(node) {
+    if (node.left) traverse(node.left);
+    result.push(node.value);
+    if (node.right) traverse(node.right);
+  }
+  
+  traverse(root);
+  return result;
+}`
+    };
+
+    function updateCodeDisplay() {
+      const {name} = modeFromValue();
+      codeDisplay.textContent = algorithmCode[name] || "// Code not available for this algorithm";
+    }
+
+    function sleep(){
+      return new Promise(res => setTimeout(res, 210 - speedInp.value));
+    }
+
+    function clearViz(){ 
+      arrayViz.innerHTML=''; 
+      searchViz.innerHTML='';
+    }
+
+    function modeFromValue(){
+      const [group, name] = algoSel.value.split(':');
+      return {group, name};
+    }
+
+    function updateControlVisibility(){
+      const {group} = modeFromValue();
+      
+      // Show/hide controls based on current tab and algorithm
+      if (currentTab === 'searching') {
+        targetBox.style.display = 'inline-flex';
+        sizeBox.style.display = 'inline-flex';
+        customArrayBox.style.display = 'inline-flex';
+      } else if (currentTab === 'sorting') {
+        targetBox.style.display = 'none';
+        sizeBox.style.display = 'inline-flex';
+        customArrayBox.style.display = 'inline-flex';
+      } else if (currentTab === 'graphs') {
+        targetBox.style.display = 'none';
+        sizeBox.style.display = 'none';
+        customArrayBox.style.display = 'none';
+      }
+      
+      updateCodeDisplay();
+    }
+    
+    function resetStats() {
+      comparisons = 0;
+      swaps = 0;
+      iterations = 0;
+      steps = 0;
+      updateStats();
+    }
+    
+    function updateStats() {
+      comparisonsEl.textContent = comparisons;
+      swapsEl.textContent = swaps;
+      iterationsEl.textContent = iterations;
+      stepCountEl.textContent = steps;
+    }
+
+    algoSel.addEventListener('change', () => {
+      updateControlVisibility();
+      // Auto-switch tab based on algorithm selection
+      const {group} = modeFromValue();
+      if (group === 'sort' && currentTab !== 'sorting') {
+        document.querySelector('[data-tab="sorting"]').click();
+      } else if (group === 'search' && currentTab !== 'searching') {
+        document.querySelector('[data-tab="searching"]').click();
+      } else if ((group === 'tree' || group === 'graph') && currentTab !== 'graphs') {
+        document.querySelector('[data-tab="graphs"]').click();
+      }
+    });
+
+    // ======= Data Generators =======
+    function genArray(n=10){
+      clearViz();
+      const arr = Array.from({length:n}, _=> Math.floor(Math.random()*99)+1);
+      if (currentTab === 'sorting') {
+        renderValueBoxes(arr, arrayViz);
+      } else if (currentTab === 'searching') {
+        renderValueBoxes(arr.sort((a, b) => a - b), searchViz); // Sort for search algorithms
+      }
+      return arr;
+    }
+
+    function genCustomArray(str){
+      const arr = str.split(',').map(val => parseInt(val.trim())).filter(val => !isNaN(val));
+      if (arr.length === 0) {
+        alert('Please enter valid numbers separated by commas');
+        return null;
+      }
+      
+      if (arr.length > 20) {
+        alert('Array truncated to 20 elements for better visualization');
+        arr.length = 20;
+      }
+      
+      clearViz();
+      if (currentTab === 'sorting') {
+        renderValueBoxes(arr, arrayViz);
+      } else if (currentTab === 'searching') {
+        renderValueBoxes(arr, searchViz);
+      }
+      return arr;
+    }
+    
+    function renderValueBoxes(arr, container) {
+      container.innerHTML = '';
+      arr.forEach(v => {
+        const box = document.createElement('div');
+        box.className = 'value-box';
+        box.textContent = v;
+        box.title = `Value: ${v}`;
+        container.appendChild(box);
+      });
+    }
+
+    function setArray(arr, container){
+      container.innerHTML = '';
+      renderValueBoxes(arr, container);
+    }
+
+    function getBoxes(container){ return Array.from(container.children); }
+    function valOf(box){ return parseInt(box.textContent); }
+    function setVal(box, v){ box.textContent = v; box.title = `Value: ${v}`; }
+
+    // ======= Tree/Graph Functions =======
+    function clearTree() {
+      treeNodes = [];
+      treeEdges = [];
+      treeRoot = null;
+      treeContainer.innerHTML = '<div class="tree-level"><div class="tree-node" style="display: none;">Start</div></div>';
+      updateParentDropdown();
+    }
+
+    function updateParentDropdown() {
+      parentNodeSel.innerHTML = '<option value="">Root Node</option>';
+      treeNodes.forEach(node => {
+        const option = document.createElement('option');
+        option.value = node.value;
+        option.textContent = `Node ${node.value}`;
+        parentNodeSel.appendChild(option);
+      });
+    }
+
+    function addTreeNode(value, parentValue = null) {
+      const nodeValue = parseInt(value);
+      if (isNaN(nodeValue)) {
+        alert('Please enter a valid number');
+        return;
+      }
+
+      // Check if node already exists
+      if (treeNodes.find(n => n.value === nodeValue)) {
+        alert('Node with this value already exists');
+        return;
+      }
+
+      const newNode = new TreeNode(nodeValue);
+      
+      if (parentValue === null || parentValue === '') {
+        // Root node
+        if (treeRoot) {
+          alert('Root node already exists. Select a parent node.');
+          return;
+        }
+        treeRoot = newNode;
+        newNode.level = 0;
+      } else {
+        // Child node
+        const parent = treeNodes.find(n => n.value === parseInt(parentValue));
+        if (!parent) {
+          alert('Parent node not found');
+          return;
+        }
+        parent.children.push(newNode);
+        newNode.parent = parent;
+        newNode.level = parent.level + 1;
+      }
+
+      treeNodes.push(newNode);
+      updateParentDropdown();
+      renderTree();
+    }
+
+    function buildSampleBST() {
+      clearTree();
+      const values = [50, 30, 70, 20, 40, 60, 80];
+      
+      // Add root
+      addTreeNode(values[0]);
+      
+      // Add other nodes with BST logic
+      for (let i = 1; i < values.length; i++) {
+        const value = values[i];
+        let parent = findBSTParent(value);
+        parentNodeSel.value = parent;
+        addTreeNode(value, parent);
+      }
+    }
+
+    function findBSTParent(value) {
+      let current = treeRoot;
+      let parent = null;
+      
+      while (current) {
+        parent = current;
+        if (value < current.value) {
+          current = current.children.find(child => child.value < parent.value);
+        } else {
+          current = current.children.find(child => child.value > parent.value);
+        }
+      }
+      
+      return parent ? parent.value : '';
+    }
+
+    function buildFromValues() {
+      const values = treeValuesInp.value.split(',').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+      if (values.length === 0) {
+        alert('Please enter valid numbers');
+        return;
+      }
+
+      clearTree();
+      
+      // Build as BST
+      addTreeNode(values[0]); // Root
+      
+      for (let i = 1; i < values.length && i < 15; i++) { // Limit for visualization
+        let parent = findBSTParent(values[i]);
+        parentNodeSel.value = parent;
+        addTreeNode(values[i], parent);
+      }
+    }
+
+    function renderTree() {
+      treeContainer.innerHTML = '';
+      
+      if (treeNodes.length === 0) {
+        treeContainer.innerHTML = '<div class="tree-level"><div class="tree-node" style="display: none;">Start</div></div>';
+        return;
+      }
+
+      // Group nodes by level
+      const levels = {};
+      treeNodes.forEach(node => {
+        if (!levels[node.level]) levels[node.level] = [];
+        levels[node.level].push(node);
+      });
+
+      // Render each level
+      Object.keys(levels).sort((a, b) => parseInt(a) - parseInt(b)).forEach(level => {
+        const levelDiv = document.createElement('div');
+        levelDiv.className = 'tree-level';
+        
+        levels[level].forEach(node => {
+          const nodeEl = document.createElement('div');
+          nodeEl.className = 'tree-node';
+          nodeEl.textContent = node.value;
+          nodeEl.title = `Node ${node.value}`;
+          nodeEl.dataset.value = node.value;
+          node.element = nodeEl;
+          levelDiv.appendChild(nodeEl);
+        });
+        
+        treeContainer.appendChild(levelDiv);
+      });
+    }
+
+    // ======= Traversal Panel =======
+    function addTraversalStep(description, highlightIndices = [], highlightNodes = []) {
+      steps++;
+      const step = {
+        description,
+        highlightIndices,
+        highlightNodes,
+        comparisons,
+        swaps,
+        iterations
+      };
+      
+      if (currentTab === 'sorting') {
+        step.arrayState = getBoxes(arrayViz).map(valOf);
+      } else if (currentTab === 'searching') {
+        step.arrayState = getBoxes(searchViz).map(valOf);
+      }
+      
+      traversalSteps.push(step);
+      updateStats();
+    }
+
+    function showTraversalPanel() {
+      traversalPanel.style.display = 'block';
+      isPanelCollapsed = false;
+      traversalPanel.classList.remove('collapsed');
+      renderTraversalStep(0);
+    }
+
+    function updateStepCounter() {
+      stepCounter.textContent = `Step ${currentStep + 1} of ${traversalSteps.length}`;
+    }
+
+    function renderTraversalStep(stepIndex) {
+      if (stepIndex < 0 || stepIndex >= traversalSteps.length) return;
+      
+      currentStep = stepIndex;
+      const step = traversalSteps[stepIndex];
+      updateStepCounter();
+      
+      // Update visualization based on current tab
+      if (currentTab === 'sorting') {
+        const boxes = getBoxes(arrayViz);
+        boxes.forEach((box, i) => {
+          box.className = 'value-box';
+          if (step.highlightIndices.includes(i)) {
+            box.classList.add('active');
+          }
+          setVal(box, step.arrayState[i]);
+        });
+      } else if (currentTab === 'searching') {
+        const boxes = getBoxes(searchViz);
+        boxes.forEach((box, i) => {
+          box.className = 'value-box';
+          if (step.highlightIndices.includes(i)) {
+            box.classList.add('active');
+          }
+          setVal(box, step.arrayState[i]);
+        });
+      } else if (currentTab === 'graphs') {
+        // Clear all node styles
+        treeNodes.forEach(node => {
+          if (node.element) {
+            node.element.className = 'tree-node';
+          }
+        });
+        
+        // Highlight current nodes
+        step.highlightNodes.forEach(value => {
+          const node = treeNodes.find(n => n.value === value);
+          if (node && node.element) {
+            node.element.classList.add('active');
+          }
+        });
+      }
+      
+      // Update content
+      traversalContent.innerHTML = '';
+      traversalSteps.forEach((s, i) => {
+        const stepEl = document.createElement('div');
+        stepEl.className = `traversal-step ${i === stepIndex ? 'active' : ''}`;
+        let content = `<div><strong>Step ${i+1}:</strong> ${s.description}</div>`;
+        
+        if (s.arrayState) {
+          content += `<div>Array: [${s.arrayState.join(', ')}]</div>`;
+        }
+        content += `<div>Comparisons: ${s.comparisons}, Swaps: ${s.swaps}, Iterations: ${s.iterations}</div>`;
+        
+        stepEl.innerHTML = content;
+        traversalContent.appendChild(stepEl);
+        
+        // Make steps clickable
+        stepEl.addEventListener('click', () => {
+          renderTraversalStep(i);
+        });
+      });
+      
+      const activeStep = traversalContent.querySelector('.active');
+      if (activeStep) {
+        activeStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    // Auto play functionality
+    function startAutoPlay() {
+      if (autoPlayInterval) return;
+      
+      autoPlayBtn.textContent = 'Pause';
+      autoPlayInterval = setInterval(() => {
+        if (currentStep < traversalSteps.length - 1) {
+          renderTraversalStep(currentStep + 1);
+        } else {
+          stopAutoPlay();
+        }
+      }, 1000);
+    }
+
+    function stopAutoPlay() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+      }
+      autoPlayBtn.textContent = 'Auto Play';
+    }
+
+    // ======= Sorting Algorithms =======
+    async function bubbleSort(){
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(arrayViz);
+      addTraversalStep("Starting Bubble Sort");
+      
+      for(let i = 0; i < boxes.length && !abortFlag; i++){
+        iterations++;
+        addTraversalStep(`Outer loop iteration ${i+1}/${boxes.length}`);
+        
+        for(let j = 0; j < boxes.length-i-1 && !abortFlag; j++){
+          boxes[j].classList.add('active');
+          boxes[j+1].classList.add('active');
+          comparisons++;
+          addTraversalStep(`Comparing ${valOf(boxes[j])} and ${valOf(boxes[j+1])} at indices ${j} and ${j+1}`, [j, j+1]);
+          
+          await sleep();
+          
+          if(valOf(boxes[j]) > valOf(boxes[j+1])){
+            const temp = boxes[j].textContent;
+            boxes[j].textContent = boxes[j+1].textContent;
+            boxes[j+1].textContent = temp;
+            swaps++;
+            
+            boxes[j].classList.add('swap');
+            boxes[j+1].classList.add('swap');
+            addTraversalStep(`Swapped ${valOf(boxes[j+1])} and ${valOf(boxes[j])}`, [j, j+1]);
+            
+            await sleep();
+            boxes[j].classList.remove('swap');
+            boxes[j+1].classList.remove('swap');
+          } else {
+            addTraversalStep(`No swap needed (${valOf(boxes[j])} ≤ ${valOf(boxes[j+1])})`, [j, j+1]);
+          }
+          
+          boxes[j].classList.remove('active');
+          boxes[j+1].classList.remove('active');
+        }
+        boxes[boxes.length-i-1]?.classList.add('ok');
+        addTraversalStep(`Element at index ${boxes.length-i-1} is now in correct position`, [boxes.length-i-1]);
+      }
+      addTraversalStep("Bubble Sort completed");
+    }
+
+    async function selectionSort() {
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(arrayViz);
+      addTraversalStep("Starting Selection Sort");
+      
+      for(let i = 0; i < boxes.length && !abortFlag; i++) {
+        iterations++;
+        let minIdx = i;
+        boxes[i].classList.add('pivot');
+        addTraversalStep(`Finding minimum from index ${i} onwards`, [i]);
+        
+        for(let j = i + 1; j < boxes.length && !abortFlag; j++) {
+          boxes[j].classList.add('active');
+          comparisons++;
+          addTraversalStep(`Comparing ${valOf(boxes[j])} with current minimum ${valOf(boxes[minIdx])}`, [j, minIdx]);
+          
+          await sleep();
+          
+          if(valOf(boxes[j]) < valOf(boxes[minIdx])) {
+            if(minIdx !== i) boxes[minIdx].classList.remove('compared');
+            minIdx = j;
+            boxes[j].classList.add('compared');
+            addTraversalStep(`New minimum found: ${valOf(boxes[j])} at index ${j}`, [j, i]);
+          }
+          
+          if(j !== minIdx) boxes[j].classList.remove('active');
+        }
+        
+        if(minIdx !== i) {
+          const temp = boxes[i].textContent;
+          boxes[i].textContent = boxes[minIdx].textContent;
+          boxes[minIdx].textContent = temp;
+          swaps++;
+          addTraversalStep(`Swapped ${valOf(boxes[minIdx])} with ${valOf(boxes[i])}`, [i, minIdx]);
+        }
+        
+        boxes[i].classList.remove('pivot');
+        boxes[minIdx].classList.remove('compared', 'active');
+        boxes[i].classList.add('ok');
+        await sleep();
+      }
+      addTraversalStep("Selection Sort completed");
+    }
+
+    // ======= Searching Algorithms =======
+    function currentArray(container){ return getBoxes(container).map(valOf); }
+
+    async function linearSearch(target){
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(searchViz);
+      addTraversalStep(`Starting Linear Search for target ${target}`);
+      
+      for(let i = 0; i < boxes.length && !abortFlag; i++){
+        iterations++;
+        boxes[i].classList.add('active');
+        comparisons++;
+        addTraversalStep(`Checking element at index ${i} (value: ${valOf(boxes[i])})`, [i]);
+        
+        await sleep();
+        
+        if(valOf(boxes[i]) === target){
+          addTraversalStep(`Target ${target} found at index ${i}`, [i]);
+          boxes[i].classList.remove('active');
+          boxes[i].classList.add('found');
+          return i;
+        }
+        
+        addTraversalStep(`Not a match (${valOf(boxes[i])} ≠ ${target})`, [i]);
+        boxes[i].classList.remove('active');
+        boxes[i].classList.add('visited');
+      }
+      
+      addTraversalStep(`Target ${target} not found in the array`);
+      return -1;
+    }
+
+    async function binarySearch(target) {
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(searchViz);
+      let left = 0;
+      let right = boxes.length - 1;
+      
+      addTraversalStep(`Starting Binary Search for target ${target}`);
+      
+      while(left <= right && !abortFlag) {
+        iterations++;
+        const mid = Math.floor((left + right) / 2);
+        
+        // Highlight current range
+        for(let i = left; i <= right; i++) {
+          if(i === mid) {
+            boxes[i].classList.add('active');
+          } else {
+            boxes[i].classList.add('compared');
+          }
+        }
+        
+        comparisons++;
+        addTraversalStep(`Checking middle element at index ${mid} (value: ${valOf(boxes[mid])}) in range [${left}, ${right}]`, [mid]);
+        
+        await sleep();
+        
+        if(valOf(boxes[mid]) === target) {
+          addTraversalStep(`Target ${target} found at index ${mid}`, [mid]);
+          boxes[mid].classList.remove('active');
+          boxes[mid].classList.add('found');
+          return mid;
+        } else if(valOf(boxes[mid]) < target) {
+          addTraversalStep(`${valOf(boxes[mid])} < ${target}, searching right half`, [mid]);
+          left = mid + 1;
+        } else {
+          addTraversalStep(`${valOf(boxes[mid])} > ${target}, searching left half`, [mid]);
+          right = mid - 1;
+        }
+        
+        // Clear highlights
+        boxes.forEach(box => {
+          box.classList.remove('active', 'compared');
+          if(!box.classList.contains('found')) {
+            if(valOf(box) < target && boxes.indexOf(box) < mid) {
+              box.classList.add('visited');
+            } else if(valOf(box) > target && boxes.indexOf(box) > mid) {
+              box.classList.add('visited');
+            }
+          }
+        });
+        
+        await sleep();
+      }
+      
+      addTraversalStep(`Target ${target} not found in the array`);
+      return -1;
+    }
+
+    // ======= Tree/Graph Algorithms =======
+    async function treeBFS() {
+      if(!treeRoot) {
+        alert('Please build a tree first');
+        return;
+      }
+      
+      traversalSteps = [];
+      resetStats();
+      const queue = [treeRoot];
+      const visited = [];
+      
+      addTraversalStep(`Starting BFS from root node ${treeRoot.value}`, [], [treeRoot.value]);
+      
+      while(queue.length > 0 && !abortFlag) {
+        const current = queue.shift();
+        iterations++;
+        
+        current.element.classList.add('active');
+        addTraversalStep(`Visiting node ${current.value}`, [], [current.value]);
+        
+        await sleep();
+        
+        visited.push(current.value);
+        current.element.classList.remove('active');
+        current.element.classList.add('visited');
+        
+        // Add children to queue
+        current.children.forEach(child => {
+          if(!visited.includes(child.value) && !queue.includes(child)) {
+            queue.push(child);
+            addTraversalStep(`Added node ${child.value} to queue`, [], [child.value]);
+          }
+        });
+      }
+      
+      addTraversalStep(`BFS completed. Visited order: ${visited.join(' → ')}`, [], visited);
+    }
+
+    async function treeDFS() {
+      if(!treeRoot) {
+        alert('Please build a tree first');
+        return;
+      }
+      
+      traversalSteps = [];
+      resetStats();
+      const visited = [];
+      
+      addTraversalStep(`Starting DFS from root node ${treeRoot.value}`, [], [treeRoot.value]);
+      
+      async function dfsHelper(node) {
+        if(!node || abortFlag) return;
+        
+        iterations++;
+        node.element.classList.add('active');
+        addTraversalStep(`Visiting node ${node.value}`, [], [node.value]);
+        
+        await sleep();
+        
+        visited.push(node.value);
+        node.element.classList.remove('active');
+        node.element.classList.add('visited');
+        
+        // Visit all children
+        for(const child of node.children) {
+          await dfsHelper(child);
+        }
+      }
+      
+      await dfsHelper(treeRoot);
+      addTraversalStep(`DFS completed. Visited order: ${visited.join(' → ')}`, [], visited);
+    }
+
+    // ======= Run / Generate / Stop =======
+    function generate(){
+      abortFlag = true; 
+      setTimeout(() => abortFlag = false, 0);
+      traversalPanel.style.display = 'none';
+      stopAutoPlay();
+      
+      if (currentTab === 'graphs') {
+        buildSampleBST();
+        return;
+      }
+      
+      const customArray = customArrayInp.value.trim();
+      if (customArray) {
+        genCustomArray(customArray);
+      } else {
+        const n = Math.min(20, Math.max(5, +countInp.value || 10)); 
+        genArray(n); 
+      }
+      resetStats();
+    }
+
+    async function run(){
+      abortFlag = false;
+      traversalSteps = [];
+      resetStats();
+      stopAutoPlay();
+      const {group, name} = modeFromValue();
+      
+      if(currentTab === 'sorting' && arrayViz.children.length === 0) {
+        generate();
+      } else if(currentTab === 'searching' && searchViz.children.length === 0) {
+        generate();
+      }
+      
+      if(group === 'sort'){
+        if(name === 'bubble') await bubbleSort();
+        else if(name === 'selection') await selectionSort();
+        // Add more sorting algorithms here
+      } else if(group === 'search'){
+        const container = searchViz;
+        const tVal = targetInp.value === '' ? null : +targetInp.value;
+        const arr = currentArray(container);
+        const target = tVal ?? arr[Math.floor(Math.random() * arr.length)];
+        targetInp.value = target;
+        
+        if(name === 'linear') {
+          await linearSearch(target);
+        } else if(name === 'binary') {
+          await binarySearch(target);
+        }
+        // Add more search algorithms here
+      } else if(group === 'tree' || group === 'graph') {
+        if(name === 'bfs') {
+          await treeBFS();
+        } else if(name === 'dfs') {
+          await treeDFS();
+        }
+        // Add more tree/graph algorithms here
+      }
+      
+      if (traversalSteps.length > 0) {
+        showTraversalPanel();
+      }
+    }
+
+    function stop(){ 
+      abortFlag = true; 
+      traversalPanel.style.display = 'none';
+      stopAutoPlay();
+      
+      // Reset all visual states
+      document.querySelectorAll('.value-box, .tree-node').forEach(el => {
+        el.className = el.classList.contains('tree-node') ? 'tree-node' : 'value-box';
+      });
+    }
+
+    // ======= Event Listeners =======
+    document.getElementById('gen').addEventListener('click', generate);
+    document.getElementById('run').addEventListener('click', run);
+    document.getElementById('stop').addEventListener('click', stop);
+    
+    applyCustomBtn.addEventListener('click', () => {
+      const customArray = customArrayInp.value.trim();
+      if (customArray) {
+        genCustomArray(customArray);
+      }
+    });
+    
+    // Tree controls
+    addNodeBtn.addEventListener('click', () => {
+      const value = nodeValueInp.value.trim();
+      const parent = parentNodeSel.value;
+      if (value) {
+        addTreeNode(value, parent);
+        nodeValueInp.value = '';
+      }
+    });
+    
+    buildBSTBtn.addEventListener('click', buildSampleBST);
+    clearTreeBtn.addEventListener('click', clearTree);
+    buildFromValuesBtn.addEventListener('click', buildFromValues);
+    
+    // Traversal panel controls
+    prevStepBtn.addEventListener('click', () => {
+      if (currentStep > 0) {
+        stopAutoPlay();
+        renderTraversalStep(currentStep - 1);
+      }
+    });
+    
+    nextStepBtn.addEventListener('click', () => {
+      if (currentStep < traversalSteps.length - 1) {
+        stopAutoPlay();
+        renderTraversalStep(currentStep + 1);
+      }
+    });
+    
+    autoPlayBtn.addEventListener('click', () => {
+      if (autoPlayInterval) {
+        stopAutoPlay();
+      } else {
+        startAutoPlay();
+      }
+    });
+    
+    closeTraversalBtn.addEventListener('click', () => {
+      traversalPanel.style.display = 'none';
+      stopAutoPlay();
+    });
+
+    // Keyboard shortcuts for traversal
+    document.addEventListener('keydown', (e) => {
+      if (traversalPanel.style.display === 'block') {
+        switch(e.key) {
+          case 'ArrowLeft':
+            e.preventDefault();
+            if (currentStep > 0) {
+              stopAutoPlay();
+              renderTraversalStep(currentStep - 1);
+            }
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            if (currentStep < traversalSteps.length - 1) {
+              stopAutoPlay();
+              renderTraversalStep(currentStep + 1);
+            }
+            break;
+          case ' ':
+            e.preventDefault();
+            if (autoPlayInterval) {
+              stopAutoPlay();
+            } else {
+              startAutoPlay();
+            }
+            break;
+          case 'Escape':
+            e.preventDefault();
+            traversalPanel.style.display = 'none';
+            stopAutoPlay();
+            break;
+        }
+      }
+    });
+
+    // Custom array input on Enter
+    customArrayInp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        applyCustomBtn.click();
+      }
+    });
+
+    // Node value input on Enter
+    nodeValueInp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        addNodeBtn.click();
+      }
+    });
+
+    // Tree values input on Enter
+    treeValuesInp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        buildFromValuesBtn.click();
+      }
+    });
+
+    // Initial state
+    updateControlVisibility();
+    generate();
+    updateCodeDisplay();
+  </script>
+</body>
+</html>
