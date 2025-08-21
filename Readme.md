@@ -13,26 +13,9 @@ Algorithm Analyser is a tool designed to help users analyze, compare, and visual
    ```bash
    git clone https://github.com/yourusername/Algorithm_Analyser.git
    ```
-2. Navigate to the project directory:
-   ```bash
-   cd Algorithm_Analyser
-   ```
-3. Install dependencies:
-   ```bash
-   # For Python projects
-   pip install -r requirements.txt
-   # For Node.js projects
-   npm install
-   ```
 
 ## ▶️ Usage
-- Launch the application:
-   ```bash
-   # For Python
-   python main.py
-   # For Node.js
-   npm start
-   ```
+``
 - 🖱️ Follow the on-screen instructions to select algorithms and input data.
 - 👀 View and analyze the results and visualizations.
 
@@ -43,4 +26,4 @@ Contributions are welcome! Please open issues or submit pull requests for improv
 This project is licensed under the MIT License.
 
 ## 📬 Contact
-For questions or support, please contact [your.email@example.com](mailto:your.email@example.com).
+For questions or support, please contact [your.email@example.com](mailto:sagnikdutta408@gmail.com).
