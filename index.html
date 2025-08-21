@@ -916,8 +916,8 @@
         this.x = x;
         this.y = y;
         this.level = level;
-        this.children = [];
-        this.parent = null;
+        this.left = null;
+        this.right = null;
         this.element = null;
       }
     }
@@ -990,6 +990,87 @@
     arr[j+1] = key;
   }
 }`,
+      'merge': `function mergeSort(arr) {
+  if (arr.length <= 1) return arr;
+  
+  let mid = Math.floor(arr.length / 2);
+  let left = mergeSort(arr.slice(0, mid));
+  let right = mergeSort(arr.slice(mid));
+  
+  return merge(left, right);
+}
+
+function merge(left, right) {
+  let result = [];
+  let i = 0, j = 0;
+  
+  while (i < left.length && j < right.length) {
+    if (left[i] < right[j]) {
+      result.push(left[i]);
+      i++;
+    } else {
+      result.push(right[j]);
+      j++;
+    }
+  }
+  
+  return result.concat(left.slice(i)).concat(right.slice(j));
+}`,
+      'quick': `function quickSort(arr, low = 0, high = arr.length - 1) {
+  if (low < high) {
+    let pi = partition(arr, low, high);
+    quickSort(arr, low, pi - 1);
+    quickSort(arr, pi + 1, high);
+  }
+}
+
+function partition(arr, low, high) {
+  let pivot = arr[high];
+  let i = low - 1;
+  
+  for (let j = low; j < high; j++) {
+    if (arr[j] < pivot) {
+      i++;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+  
+  [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+  return i + 1;
+}`,
+      'heap': `function heapSort(arr) {
+  let n = arr.length;
+  
+  // Build max heap
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    heapify(arr, n, i);
+  }
+  
+  // Extract elements from heap
+  for (let i = n - 1; i > 0; i--) {
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+    heapify(arr, i, 0);
+  }
+}
+
+function heapify(arr, n, i) {
+  let largest = i;
+  let left = 2 * i + 1;
+  let right = 2 * i + 2;
+  
+  if (left < n && arr[left] > arr[largest]) {
+    largest = left;
+  }
+  
+  if (right < n && arr[right] > arr[largest]) {
+    largest = right;
+  }
+  
+  if (largest !== i) {
+    [arr[i], arr[largest]] = [arr[largest], arr[i]];
+    heapify(arr, n, largest);
+  }
+}`,
       'linear': `function linearSearch(arr, target) {
   for (let i = 0; i < arr.length; i++) {
     if (arr[i] === target) {
@@ -1013,6 +1094,43 @@
   }
   return -1;
 }`,
+      'jump': `function jumpSearch(arr, target) {
+  let n = arr.length;
+  let step = Math.floor(Math.sqrt(n));
+  let prev = 0;
+  
+  while (arr[Math.min(step, n) - 1] < target) {
+    prev = step;
+    step += Math.floor(Math.sqrt(n));
+    if (prev >= n) return -1;
+  }
+  
+  while (arr[prev] < target) {
+    prev++;
+    if (prev == Math.min(step, n)) return -1;
+  }
+  
+  if (arr[prev] == target) return prev;
+  return -1;
+}`,
+      'interpolation': `function interpolationSearch(arr, target) {
+  let low = 0;
+  let high = arr.length - 1;
+  
+  while (low <= high && target >= arr[low] && target <= arr[high]) {
+    if (low === high) {
+      if (arr[low] === target) return low;
+      return -1;
+    }
+    
+    let pos = low + Math.floor(((target - arr[low]) * (high - low)) / (arr[high] - arr[low]));
+    
+    if (arr[pos] === target) return pos;
+    if (arr[pos] < target) low = pos + 1;
+    else high = pos - 1;
+  }
+  return -1;
+}`,
       'bfs': `function treeBFS(root) {
   if (!root) return;
   let queue = [root];
@@ -1022,9 +1140,8 @@
     let node = queue.shift();
     result.push(node.value);
     
-    for (let child of node.children) {
-      queue.push(child);
-    }
+    if (node.left) queue.push(node.left);
+    if (node.right) queue.push(node.right);
   }
   return result;
 }`,
@@ -1034,9 +1151,8 @@
   
   function traverse(node) {
     result.push(node.value);
-    for (let child of node.children) {
-      traverse(child);
-    }
+    if (node.left) traverse(node.left);
+    if (node.right) traverse(node.right);
   }
   
   traverse(root);
@@ -1053,6 +1169,103 @@
   }
   
   traverse(root);
+  return result;
+}`,
+      'preorder': `function preorderTraversal(root) {
+  if (!root) return;
+  let result = [];
+  
+  function traverse(node) {
+    result.push(node.value);
+    if (node.left) traverse(node.left);
+    if (node.right) traverse(node.right);
+  }
+  
+  traverse(root);
+  return result;
+}`,
+      'postorder': `function postorderTraversal(root) {
+  if (!root) return;
+  let result = [];
+  
+  function traverse(node) {
+    if (node.left) traverse(node.left);
+    if (node.right) traverse(node.right);
+    result.push(node.value);
+  }
+  
+  traverse(root);
+  return result;
+}`,
+      'dijkstra': `function dijkstra(graph, start) {
+  let distances = {};
+  let visited = new Set();
+  
+  // Initialize distances
+  for (let vertex in graph) {
+    distances[vertex] = Infinity;
+  }
+  distances[start] = 0;
+  
+  while (true) {
+    let minVertex = null;
+    for (let vertex in graph) {
+      if (!visited.has(vertex) && 
+          (minVertex === null || distances[vertex] < distances[minVertex])) {
+        minVertex = vertex;
+      }
+    }
+    
+    if (minVertex === null) break;
+    visited.add(minVertex);
+    
+    for (let neighbor in graph[minVertex]) {
+      let distance = distances[minVertex] + graph[minVertex][neighbor];
+      if (distance < distances[neighbor]) {
+        distances[neighbor] = distance;
+      }
+    }
+  }
+  
+  return distances;
+}`,
+      'graph:bfs': `function graphBFS(graph, start) {
+  let visited = new Set();
+  let queue = [start];
+  let result = [];
+  
+  visited.add(start);
+  
+  while (queue.length > 0) {
+    let vertex = queue.shift();
+    result.push(vertex);
+    
+    for (let neighbor of graph[vertex]) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+  
+  return result;
+}`,
+      'graph:dfs': `function graphDFS(graph, start) {
+  let visited = new Set();
+  let result = [];
+  
+  function traverse(vertex) {
+    visited.add(vertex);
+    result.push(vertex);
+    
+    for (let neighbor of graph[vertex]) {
+      if (!visited.has(neighbor)) {
+        traverse(neighbor);
+      }
+    }
+  }
+  
+  traverse(start);
   return result;
 }`
     };
@@ -1153,7 +1366,7 @@
       if (currentTab === 'sorting') {
         renderValueBoxes(arr, arrayViz);
       } else if (currentTab === 'searching') {
-        renderValueBoxes(arr, searchViz);
+        renderValueBoxes(arr.sort((a, b) => a - b), searchViz);
       }
       return arr;
     }
@@ -1227,8 +1440,21 @@
           alert('Parent node not found');
           return;
         }
-        parent.children.push(newNode);
-        newNode.parent = parent;
+        
+        // BST logic: left if smaller, right if larger
+        if (nodeValue < parent.value) {
+          if (parent.left) {
+            alert('Parent already has a left child');
+            return;
+          }
+          parent.left = newNode;
+        } else {
+          if (parent.right) {
+            alert('Parent already has a right child');
+            return;
+          }
+          parent.right = newNode;
+        }
         newNode.level = parent.level + 1;
       }
 
@@ -1260,9 +1486,9 @@
       while (current) {
         parent = current;
         if (value < current.value) {
-          current = current.children.find(child => child.value < parent.value);
+          current = current.left;
         } else {
-          current = current.children.find(child => child.value > parent.value);
+          current = current.right;
         }
       }
       
@@ -1537,6 +1763,264 @@
       addTraversalStep("Selection Sort completed");
     }
 
+    async function insertionSort() {
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(arrayViz);
+      addTraversalStep("Starting Insertion Sort");
+      
+      for (let i = 1; i < boxes.length && !abortFlag; i++) {
+        iterations++;
+        let key = valOf(boxes[i]);
+        let j = i - 1;
+        
+        boxes[i].classList.add('pivot');
+        addTraversalStep(`Starting with element ${key} at index ${i}`, [i]);
+        
+        while (j >= 0 && valOf(boxes[j]) > key && !abortFlag) {
+          comparisons++;
+          boxes[j].classList.add('active');
+          addTraversalStep(`Comparing ${valOf(boxes[j])} with key ${key}`, [j, i]);
+          
+          await sleep();
+          
+          boxes[j+1].textContent = boxes[j].textContent;
+          swaps++;
+          addTraversalStep(`Shifting ${valOf(boxes[j])} to position ${j+1}`, [j, j+1]);
+          
+          boxes[j].classList.remove('active');
+          boxes[j].classList.add('visited');
+          
+          j = j - 1;
+          await sleep();
+        }
+        
+        boxes[j+1].textContent = key;
+        addTraversalStep(`Placing key ${key} at position ${j+1}`, [j+1]);
+        
+        boxes[i].classList.remove('pivot');
+        boxes[j+1].classList.add('ok');
+        
+        await sleep();
+      }
+      addTraversalStep("Insertion Sort completed");
+    }
+
+    async function mergeSort() {
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(arrayViz);
+      addTraversalStep("Starting Merge Sort");
+      
+      await mergeSortHelper(boxes, 0, boxes.length - 1);
+      addTraversalStep("Merge Sort completed");
+    }
+
+    async function mergeSortHelper(boxes, l, r) {
+      if (l >= r || abortFlag) return;
+      
+      const mid = Math.floor((l + r) / 2);
+      addTraversalStep(`Splitting array from index ${l} to ${r}`, Array.from({length: r-l+1}, (_, i) => i+l));
+      
+      await mergeSortHelper(boxes, l, mid);
+      await mergeSortHelper(boxes, mid + 1, r);
+      
+      await merge(boxes, l, mid, r);
+    }
+
+    async function merge(boxes, l, m, r) {
+      addTraversalStep(`Merging arrays from ${l} to ${m} and ${m+1} to ${r}`, Array.from({length: r-l+1}, (_, i) => i+l));
+      
+      const n1 = m - l + 1;
+      const n2 = r - m;
+      
+      // Create temp arrays
+      const L = Array.from({length: n1}, (_, i) => valOf(boxes[l + i]));
+      const R = Array.from({length: n2}, (_, i) => valOf(boxes[m + 1 + i]));
+      
+      let i = 0, j = 0, k = l;
+      
+      while (i < n1 && j < n2 && !abortFlag) {
+        comparisons++;
+        addTraversalStep(`Comparing ${L[i]} and ${R[j]}`, [l + i, m + 1 + j]);
+        
+        await sleep();
+        
+        if (L[i] <= R[j]) {
+          setVal(boxes[k], L[i]);
+          swaps++;
+          addTraversalStep(`Placing ${L[i]} at position ${k}`, [k]);
+          i++;
+        } else {
+          setVal(boxes[k], R[j]);
+          swaps++;
+          addTraversalStep(`Placing ${R[j]} at position ${k}`, [k]);
+          j++;
+        }
+        
+        boxes[k].classList.add('ok');
+        k++;
+        await sleep();
+      }
+      
+      while (i < n1 && !abortFlag) {
+        setVal(boxes[k], L[i]);
+        swaps++;
+        addTraversalStep(`Placing remaining element ${L[i]} at position ${k}`, [k]);
+        boxes[k].classList.add('ok');
+        i++;
+        k++;
+        await sleep();
+      }
+      
+      while (j < n2 && !abortFlag) {
+        setVal(boxes[k], R[j]);
+        swaps++;
+        addTraversalStep(`Placing remaining element ${R[j]} at position ${k}`, [k]);
+        boxes[k].classList.add('ok');
+        j++;
+        k++;
+        await sleep();
+      }
+    }
+
+    async function quickSort() {
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(arrayViz);
+      addTraversalStep("Starting Quick Sort");
+      
+      await quickSortHelper(boxes, 0, boxes.length - 1);
+      addTraversalStep("Quick Sort completed");
+    }
+
+    async function quickSortHelper(boxes, low, high) {
+      if (low < high && !abortFlag) {
+        const pi = await partition(boxes, low, high);
+        
+        await quickSortHelper(boxes, low, pi - 1);
+        await quickSortHelper(boxes, pi + 1, high);
+      }
+    }
+
+    async function partition(boxes, low, high) {
+      const pivot = valOf(boxes[high]);
+      boxes[high].classList.add('pivot');
+      addTraversalStep(`Selecting pivot: ${pivot} at index ${high}`, [high]);
+      
+      let i = low - 1;
+      
+      for (let j = low; j < high && !abortFlag; j++) {
+        comparisons++;
+        boxes[j].classList.add('active');
+        addTraversalStep(`Comparing ${valOf(boxes[j])} with pivot ${pivot}`, [j, high]);
+        
+        await sleep();
+        
+        if (valOf(boxes[j]) < pivot) {
+          i++;
+          
+          if (i !== j) {
+            const temp = boxes[i].textContent;
+            boxes[i].textContent = boxes[j].textContent;
+            boxes[j].textContent = temp;
+            swaps++;
+            addTraversalStep(`Swapping ${valOf(boxes[i])} and ${valOf(boxes[j])}`, [i, j]);
+            await sleep();
+          }
+        }
+        
+        boxes[j].classList.remove('active');
+      }
+      
+      const temp = boxes[i + 1].textContent;
+      boxes[i + 1].textContent = boxes[high].textContent;
+      boxes[high].textContent = temp;
+      swaps++;
+      addTraversalStep(`Placing pivot ${pivot} at correct position ${i+1}`, [i+1, high]);
+      
+      boxes[high].classList.remove('pivot');
+      boxes[i + 1].classList.add('ok');
+      
+      await sleep();
+      return i + 1;
+    }
+
+    async function heapSort() {
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(arrayViz);
+      const n = boxes.length;
+      addTraversalStep("Starting Heap Sort");
+      
+      // Build max heap
+      for (let i = Math.floor(n / 2) - 1; i >= 0 && !abortFlag; i--) {
+        await heapify(boxes, n, i);
+      }
+      
+      // Extract elements from heap
+      for (let i = n - 1; i > 0 && !abortFlag; i--) {
+        // Move current root to end
+        const temp = boxes[0].textContent;
+        boxes[0].textContent = boxes[i].textContent;
+        boxes[i].textContent = temp;
+        swaps++;
+        addTraversalStep(`Moving root ${valOf(boxes[i])} to end at index ${i}`, [0, i]);
+        
+        boxes[i].classList.add('ok');
+        
+        await heapify(boxes, i, 0);
+      }
+      
+      boxes[0].classList.add('ok');
+      addTraversalStep("Heap Sort completed");
+    }
+
+    async function heapify(boxes, n, i) {
+      let largest = i;
+      const left = 2 * i + 1;
+      const right = 2 * i + 2;
+      
+      boxes[i].classList.add('pivot');
+      if (left < n) boxes[left].classList.add('active');
+      if (right < n) boxes[right].classList.add('active');
+      
+      if (left < n && !abortFlag) {
+        comparisons++;
+        addTraversalStep(`Comparing left child ${valOf(boxes[left])} with root ${valOf(boxes[i])}`, [left, i]);
+        await sleep();
+        
+        if (valOf(boxes[left]) > valOf(boxes[largest])) {
+          largest = left;
+        }
+      }
+      
+      if (right < n && !abortFlag) {
+        comparisons++;
+        addTraversalStep(`Comparing right child ${valOf(boxes[right])} with current largest ${valOf(boxes[largest])}`, [right, largest]);
+        await sleep();
+        
+        if (valOf(boxes[right]) > valOf(boxes[largest])) {
+          largest = right;
+        }
+      }
+      
+      if (largest !== i && !abortFlag) {
+        const temp = boxes[i].textContent;
+        boxes[i].textContent = boxes[largest].textContent;
+        boxes[largest].textContent = temp;
+        swaps++;
+        addTraversalStep(`Swapping ${valOf(boxes[i])} with ${valOf(boxes[largest])}`, [i, largest]);
+        await sleep();
+        
+        await heapify(boxes, n, largest);
+      }
+      
+      boxes[i].classList.remove('pivot');
+      if (left < n) boxes[left].classList.remove('active');
+      if (right < n) boxes[right].classList.remove('active');
+    }
+
     // ======= Searching Algorithms =======
     function currentArray(container){ return getBoxes(container).map(valOf); }
 
@@ -1629,6 +2113,145 @@
       return -1;
     }
 
+    async function jumpSearch(target) {
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(searchViz);
+      const n = boxes.length;
+      const step = Math.floor(Math.sqrt(n));
+      let prev = 0;
+      
+      addTraversalStep(`Starting Jump Search for target ${target} with step size ${step}`);
+      
+      // Finding the block where element is present
+      while (valOf(boxes[Math.min(step, n) - 1]) < target && !abortFlag) {
+        iterations++;
+        prev = step;
+        
+        for (let i = prev - step; i < prev; i++) {
+          if (i < n) boxes[i].classList.add('visited');
+        }
+        
+        addTraversalStep(`Jumping to block starting at index ${prev}`, Array.from({length: step}, (_, i) => i + prev - step));
+        await sleep();
+        
+        step += Math.floor(Math.sqrt(n));
+        if (prev >= n) {
+          addTraversalStep(`Target ${target} not found in the array`);
+          return -1;
+        }
+      }
+      
+      // Doing a linear search for target in block beginning with prev
+      while (valOf(boxes[prev]) < target && !abortFlag) {
+        iterations++;
+        comparisons++;
+        boxes[prev].classList.add('active');
+        addTraversalStep(`Checking element at index ${prev} (value: ${valOf(boxes[prev])})`, [prev]);
+        
+        await sleep();
+        
+        boxes[prev].classList.remove('active');
+        boxes[prev].classList.add('visited');
+        prev++;
+        
+        if (prev === Math.min(step, n)) {
+          addTraversalStep(`Target ${target} not found in the array`);
+          return -1;
+        }
+      }
+      
+      // If element is found
+      comparisons++;
+      boxes[prev].classList.add('active');
+      addTraversalStep(`Checking element at index ${prev} (value: ${valOf(boxes[prev])})`, [prev]);
+      
+      await sleep();
+      
+      if (valOf(boxes[prev]) === target) {
+        addTraversalStep(`Target ${target} found at index ${prev}`, [prev]);
+        boxes[prev].classList.remove('active');
+        boxes[prev].classList.add('found');
+        return prev;
+      }
+      
+      addTraversalStep(`Target ${target} not found in the array`);
+      return -1;
+    }
+
+    async function interpolationSearch(target) {
+      traversalSteps = [];
+      resetStats();
+      const boxes = getBoxes(searchViz);
+      let low = 0;
+      let high = boxes.length - 1;
+      
+      addTraversalStep(`Starting Interpolation Search for target ${target}`);
+      
+      while (low <= high && target >= valOf(boxes[low]) && target <= valOf(boxes[high]) && !abortFlag) {
+        iterations++;
+        
+        if (low === high) {
+          comparisons++;
+          boxes[low].classList.add('active');
+          addTraversalStep(`Only one element left at index ${low} (value: ${valOf(boxes[low])})`, [low]);
+          
+          await sleep();
+          
+          if (valOf(boxes[low]) === target) {
+            addTraversalStep(`Target ${target} found at index ${low}`, [low]);
+            boxes[low].classList.remove('active');
+            boxes[low].classList.add('found');
+            return low;
+          }
+          
+          addTraversalStep(`Target ${target} not found`);
+          return -1;
+        }
+        
+        // Calculate position using interpolation formula
+        const pos = low + Math.floor(((target - valOf(boxes[low])) * (high - low)) / (valOf(boxes[high]) - valOf(boxes[low])));
+        
+        boxes[pos].classList.add('active');
+        addTraversalStep(`Calculated position: ${pos} (value: ${valOf(boxes[pos])})`, [pos]);
+        
+        await sleep();
+        
+        comparisons++;
+        if (valOf(boxes[pos]) === target) {
+          addTraversalStep(`Target ${target} found at index ${pos}`, [pos]);
+          boxes[pos].classList.remove('active');
+          boxes[pos].classList.add('found');
+          return pos;
+        }
+        
+        comparisons++;
+        if (valOf(boxes[pos]) < target) {
+          addTraversalStep(`${valOf(boxes[pos])} < ${target}, searching right half`, [pos]);
+          
+          for (let i = low; i <= pos; i++) {
+            boxes[i].classList.add('visited');
+          }
+          
+          low = pos + 1;
+        } else {
+          addTraversalStep(`${valOf(boxes[pos])} > ${target}, searching left half`, [pos]);
+          
+          for (let i = pos; i <= high; i++) {
+            boxes[i].classList.add('visited');
+          }
+          
+          high = pos - 1;
+        }
+        
+        boxes[pos].classList.remove('active');
+        await sleep();
+      }
+      
+      addTraversalStep(`Target ${target} not found in the array`);
+      return -1;
+    }
+
     // ======= Tree/Graph Algorithms =======
     async function treeBFS() {
       if(!treeRoot) {
@@ -1657,12 +2280,14 @@
         current.element.classList.add('visited');
         
         // Add children to queue
-        current.children.forEach(child => {
-          if(!visited.includes(child.value) && !queue.includes(child)) {
-            queue.push(child);
-            addTraversalStep(`Added node ${child.value} to queue`, [], [child.value]);
-          }
-        });
+        if (current.left) {
+          queue.push(current.left);
+          addTraversalStep(`Added left child ${current.left.value} to queue`, [], [current.left.value]);
+        }
+        if (current.right) {
+          queue.push(current.right);
+          addTraversalStep(`Added right child ${current.right.value} to queue`, [], [current.right.value]);
+        }
       }
       
       addTraversalStep(`BFS completed. Visited order: ${visited.join(' → ')}`, [], visited);
@@ -1694,13 +2319,143 @@
         node.element.classList.add('visited');
         
         // Visit all children
-        for(const child of node.children) {
-          await dfsHelper(child);
-        }
+        if (node.left) await dfsHelper(node.left);
+        if (node.right) await dfsHelper(node.right);
       }
       
       await dfsHelper(treeRoot);
       addTraversalStep(`DFS completed. Visited order: ${visited.join(' → ')}`, [], visited);
+    }
+
+    async function treeInorder() {
+      if(!treeRoot) {
+        alert('Please build a tree first');
+        return;
+      }
+      
+      traversalSteps = [];
+      resetStats();
+      const visited = [];
+      
+      addTraversalStep(`Starting Inorder Traversal from root node ${treeRoot.value}`, [], [treeRoot.value]);
+      
+      async function inorderHelper(node) {
+        if(!node || abortFlag) return;
+        
+        if (node.left) {
+          node.element.classList.add('active');
+          addTraversalStep(`Going to left child of ${node.value}`, [], [node.value, node.left.value]);
+          await sleep();
+          node.element.classList.remove('active');
+          await inorderHelper(node.left);
+        }
+        
+        iterations++;
+        node.element.classList.add('active');
+        addTraversalStep(`Visiting node ${node.value}`, [], [node.value]);
+        await sleep();
+        
+        visited.push(node.value);
+        node.element.classList.remove('active');
+        node.element.classList.add('visited');
+        
+        if (node.right) {
+          node.element.classList.add('active');
+          addTraversalStep(`Going to right child of ${node.value}`, [], [node.value, node.right.value]);
+          await sleep();
+          node.element.classList.remove('active');
+          await inorderHelper(node.right);
+        }
+      }
+      
+      await inorderHelper(treeRoot);
+      addTraversalStep(`Inorder Traversal completed. Visited order: ${visited.join(' → ')}`, [], visited);
+    }
+
+    async function treePreorder() {
+      if(!treeRoot) {
+        alert('Please build a tree first');
+        return;
+      }
+      
+      traversalSteps = [];
+      resetStats();
+      const visited = [];
+      
+      addTraversalStep(`Starting Preorder Traversal from root node ${treeRoot.value}`, [], [treeRoot.value]);
+      
+      async function preorderHelper(node) {
+        if(!node || abortFlag) return;
+        
+        iterations++;
+        node.element.classList.add('active');
+        addTraversalStep(`Visiting node ${node.value}`, [], [node.value]);
+        await sleep();
+        
+        visited.push(node.value);
+        node.element.classList.remove('active');
+        node.element.classList.add('visited');
+        
+        if (node.left) {
+          addTraversalStep(`Going to left child of ${node.value}`, [], [node.value, node.left.value]);
+          await sleep();
+          await preorderHelper(node.left);
+        }
+        
+        if (node.right) {
+          addTraversalStep(`Going to right child of ${node.value}`, [], [node.value, node.right.value]);
+          await sleep();
+          await preorderHelper(node.right);
+        }
+      }
+      
+      await preorderHelper(treeRoot);
+      addTraversalStep(`Preorder Traversal completed. Visited order: ${visited.join(' → ')}`, [], visited);
+    }
+
+    async function treePostorder() {
+      if(!treeRoot) {
+        alert('Please build a tree first');
+        return;
+      }
+      
+      traversalSteps = [];
+      resetStats();
+      const visited = [];
+      
+      addTraversalStep(`Starting Postorder Traversal from root node ${treeRoot.value}`, [], [treeRoot.value]);
+      
+      async function postorderHelper(node) {
+        if(!node || abortFlag) return;
+        
+        if (node.left) {
+          node.element.classList.add('active');
+          addTraversalStep(`Going to left child of ${node.value}`, [], [node.value, node.left.value]);
+          await sleep();
+          node.element.classList.remove('active');
+          await postorderHelper(node.left);
+        }
+        
+        if (node.right) {
+          node.element.classList.add('active');
+          addTraversalStep(`Going to right child of ${node.value}`, [], [node.value, node.right.value]);
+          await sleep();
+          node.element.classList.remove('active');
+          await postorderHelper(node.right);
+        }
+        
+        iterations++;
+        node.element.classList.add('active');
+        addTraversalStep(`Visiting node ${node.value}`, [], [node.value]);
+        await sleep();
+        
+        visited.push(node.value);
+        node.element.classList.remove('active');
+        node.element.classList.add('visited');
+      }
+      
+      await postorderHelper(treeRoot);
+      addTraversalStep(`Postorder Traversal completed. Visited order: ${visited.join(' → ')}`, [], visited);
     }
 
     // ======= Run / Generate / Stop =======
@@ -1741,7 +2496,10 @@
       if(group === 'sort'){
         if(name === 'bubble') await bubbleSort();
         else if(name === 'selection') await selectionSort();
-        // Add more sorting algorithms here
+        else if(name === 'insertion') await insertionSort();
+        else if(name === 'merge') await mergeSort();
+        else if(name === 'quick') await quickSort();
+        else if(name === 'heap') await heapSort();
       } else if(group === 'search'){
         const container = searchViz;
         const tVal = targetInp.value === '' ? null : +targetInp.value;
@@ -1753,15 +2511,23 @@
           await linearSearch(target);
         } else if(name === 'binary') {
           await binarySearch(target);
+        } else if(name === 'jump') {
+          await jumpSearch(target);
+        } else if(name === 'interpolation') {
+          await interpolationSearch(target);
         }
-        // Add more search algorithms here
-      } else if(group === 'tree' || group === 'graph') {
+      } else if(group === 'tree') {
         if(name === 'bfs') {
           await treeBFS();
         } else if(name === 'dfs') {
           await treeDFS();
+        } else if(name === 'inorder') {
+          await treeInorder();
+        } else if(name === 'preorder') {
+          await treePreorder();
+        } else if(name === 'postorder') {
+          await treePostorder();
         }
-        // Add more tree/graph algorithms here
       }
       
       if (traversalSteps.length > 0) {
